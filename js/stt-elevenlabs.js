@@ -174,9 +174,15 @@
       status('Words: connecting to ElevenLabs...');
       var api = String(cfg.get('elevenLabsApiBase')).replace(/\/+$/, '');
       doFetch(api + '/v1/single-use-token/realtime_scribe', { method: 'POST', headers: { 'xi-api-key': key } }).then(function (r) {
-        if (r.status === 401 || r.status === 403) { throw { plain: ERRORS.auth_error }; }
-        if (!r.ok) { throw { plain: 'ElevenLabs would not start a transcription session (error ' + r.status + ').' }; }
-        return r.json();
+        if (r.ok) { return r.json(); }
+        // say ElevenLabs' own reason, so a problem can be fixed without guessing
+        return (typeof r.text === 'function' ? r.text() : Promise.resolve('')).then(function (t) {
+          var why = '';
+          try { var o = JSON.parse(t); var d = o.detail || o.error || o; why = typeof d === 'string' ? d : (d.message || d.status || JSON.stringify(d)); } catch (e) { why = String(t || '').slice(0, 200); }
+          why = String(why || '').replace(/\s+/g, ' ').trim();
+          if ((r.status === 401 || r.status === 403) && !why) { throw { plain: ERRORS.auth_error }; }
+          throw { plain: 'ElevenLabs would not start a transcription session (error ' + r.status + ')' + (why ? ': ' + why : '.') };
+        });
       }, function () {
         throw { plain: 'Could not reach ElevenLabs. Check the internet connection. If this keeps happening, ElevenLabs may be refusing requests from a page opened as a file; tell me and I will set up a fix.' };
       }).then(function (body) {
