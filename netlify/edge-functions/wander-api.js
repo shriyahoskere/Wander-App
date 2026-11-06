@@ -30,7 +30,17 @@ export default async function handler(req) {
   const passOk = !pass || req.headers.get('x-wander-pass') === pass;
 
   if (url.pathname === '/api/wander/status') {
-    return json({ eleven: !!eleven, anthropic: !!anthropic, passcode: !!pass, passOk: passOk });
+    const out = { eleven: !!eleven, anthropic: !!anthropic, passcode: !!pass, passOk: passOk };
+    // Open /api/wander/status?check=1&pass=YOURPASSCODE to test the ElevenLabs key itself.
+    if (url.searchParams.get('check') && eleven && (!pass || url.searchParams.get('pass') === pass)) {
+      try {
+        const r = await fetch('https://api.elevenlabs.io/v1/single-use-token/realtime_scribe', { method: 'POST', headers: { 'xi-api-key': eleven } });
+        const t = await r.text();
+        out.elevenCheck = r.ok ? 'ok: the key works for live transcription' : 'error ' + r.status + ': ' + t.slice(0, 300);
+      } catch (e) { out.elevenCheck = 'Netlify could not reach ElevenLabs'; }
+      out.keyLooksLike = eleven.slice(0, 3) + '... (' + eleven.length + ' characters)';
+    }
+    return json(out);
   }
   if (!passOk) { return json({ detail: { status: 'passcode', message: 'Wrong or missing Wander passcode.' } }, 401); }
 
@@ -52,7 +62,8 @@ export default async function handler(req) {
     return json({ detail: 'Not found' }, 404);
   }
   if (req.method !== 'POST') { return json({ detail: 'Not allowed' }, 405); }
-  const body = await req.arrayBuffer();
+  const buf = await req.arrayBuffer();
+  const body = buf.byteLength ? buf : undefined;
 
   if (!wrap) {
     try {
