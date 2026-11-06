@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Wander</title>
+<!-- Icons: Google Material Symbols (needs the internet; without it the icon names show as words) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..400,0..1,0&display=block">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!--
+  index.html - the page you open in Chrome.
+  Session is the main screen: on the left, a phone-sized view of the water (it mirrors the ocean
+  you hear); on the right, the dashboard: voice detection, what you said, what the system is
+  doing, the controls, captured thoughts and your sound and voice setup.
+  The other tabs are Wording (plan every line) and Settings (every value).
+  The logic is in the js/ folder; this page only shows it.
+-->
+<header class="top">
+  <div class="brand wordmark" aria-label="Wander">Wander</div>
+  <nav id="tabs" class="tabs" role="tablist" aria-label="Sections">
+    <span class="tab-ink" aria-hidden="true"></span>
+    <button role="tab" data-tab="audio" aria-selected="true">Session</button>
+    <button role="tab" data-tab="wording" aria-selected="false">Wording</button>
+    <button role="tab" data-tab="settings" aria-selected="false">Settings</button>
+  </nav>
+  <a class="toplink" href="tests/tests.html" target="_blank" rel="noopener">Run the tests</a>
+</header>
+
+<main>
+  <!-- ============ SESSION ============ -->
+  <!-- Left: the water, phone-sized, as in the Wander designs. Right: the dashboard. Voice
+       detection and your words come first; everything scrolls inside its own panel. -->
+  <section id="tab-audio" class="view session">
+    <div class="sea-layout" id="seaLayout">
+
+      <div class="sea-col">
+        <div class="stage" id="stage" data-mode="still" data-run="off">
+          <canvas id="seaCanvas" class="sea-canvas" aria-hidden="true"></canvas>
+          <div class="stage-top">
+            <button class="icon-btn" id="stageBack" title="Back to the start"><span class="msym" aria-hidden="true">arrow_back</span><span class="sr-only">Back</span></button>
+            <button class="icon-btn" id="drawerToggle" aria-controls="drawer" aria-expanded="true" title="Focus: show or hide the dashboard"><span class="msym" aria-hidden="true">close_fullscreen</span><span class="sr-only">Focus</span></button>
+          </div>
+          <div class="stage-title" aria-live="polite"><span id="seaState">Ready</span><span class="sea-dot" id="seaDot" aria-hidden="true"></span></div>
+          <p class="stage-hint" id="seaHint" hidden></p>
+          <p class="stage-toast" id="seaToast" role="status"></p>
+          <div class="stage-bottom">
+            <span class="sea-timer" id="seaTimer">00:00:00</span>
+            <button class="sea-btn start" id="seaStopStart">Start</button>
+          </div>
+        </div>
+        <button class="save-bar" id="saveBar" disabled>Save</button>
+      </div>
+
+      <div class="dash" id="drawer" aria-label="Dashboard">
+
+        <section class="card detect" aria-labelledby="detHead">
+          <div class="colhead"><h2 id="detHead">Voice detection</h2><span id="audioState" class="pill">Not started</span></div>
+          <div class="det-now">
+            <span class="det-dot" id="detDot" aria-hidden="true"></span>
+            <span class="det-label" id="detLabel">Not listening</span>
+            <span class="rec" id="recPill" aria-live="polite"><span class="rec-dot" aria-hidden="true"></span>Recording your voice</span>
+          </div>
+          <div class="det-row">
+            <span class="det-name">You</span>
+            <div class="det-bar" title="Your voice level. Speech is detected above the line.">
+              <div id="micMeter"></div>
+              <span id="micOn" class="mark"><span>speech</span></span>
+            </div>
+          </div>
+          <div class="det-row">
+            <span class="det-name">Ocean</span>
+            <div class="det-bar ocean"><div id="oceanMeter"></div></div>
+          </div>
+          <p class="det-text"><span id="micText">microphone not in use</span><span class="det-sep" aria-hidden="true"> · </span><span id="oceanText">ocean off</span></p>
+          <p id="audioCountdown" class="mono-ish">&nbsp;</p>
+        </section>
+
+        <section class="card said" aria-labelledby="saidHead">
+          <div class="colhead"><h2 id="saidHead">What you said</h2><span class="head-right"><span id="sttStatus" class="muted">Words: not started</span><button class="copy-all" id="copyWords" title="Copy the whole transcript"><span class="msym" aria-hidden="true">content_copy</span><span>Copy all</span></button></span></div>
+          <div id="words" class="words scroll" aria-live="polite"><p class="placeholder">Your words appear here as you speak.</p></div>
+          <div class="typebar">
+            <input id="audioText" type="text" placeholder="Or type what you're thinking, then press Enter" aria-label="Type your thoughts">
+            <button id="audioSend" class="btn small">Add</button>
+          </div>
+        </section>
+
+        <section class="card system" aria-labelledby="sysHead">
+          <div class="colhead"><h2 id="sysHead">What the system is doing</h2></div>
+          <div id="audioLog" class="log scroll" aria-label="Session narration"></div>
+        </section>
+
+        <div class="dash-side">
+          <section class="card controls" aria-label="Session controls">
+            <h1 class="state-line" id="stateLine">Ready when you are</h1>
+            <p class="state-sub" id="stateSub">Put headphones on, then start. Nothing is said for at least a minute.</p>
+            <div class="actions">
+              <button id="audioStart" class="btn primary">Start session</button>
+              <div class="actions-row">
+                <button id="holdTalk" class="btn" title="Press and hold while you talk">Hold to talk</button>
+                <button id="audioEnd" class="btn quiet">End session</button>
+              </div>
+            </div>
+            <div class="switches">
+              <label class="switch"><input type="checkbox" id="useMic" checked><span class="switch-ui" aria-hidden="true"></span>Use the microphone</label>
+              <label class="switch"><input type="checkbox" id="pauseCueSwitch"><span class="switch-ui" aria-hidden="true"></span>Sound after you speak</label>
+              <label class="switch"><input type="checkbox" id="boatsSwitch"><span class="switch-ui" aria-hidden="true"></span>Show paper boats</label>
+            </div>
+            <div id="audioProblem" class="problem" role="alert" hidden></div>
+            <p id="audioClip" class="speaking" aria-live="polite"></p>
+            <button class="btn small" id="sortReopen" hidden>Show the last sorted session</button>
+            <div class="commands">
+              <h2>Voice commands</h2>
+              <p class="muted small">Say one on its own, after a short pause. The buttons do the same.</p>
+              <div class="chips" id="audioCmds">
+                <button class="chip" data-cmd="snooze" data-min="1">snooze for one minute</button>
+                <button class="chip" data-cmd="snooze">snooze</button>
+                <button class="chip" data-cmd="scratch">scratch that</button>
+                <button class="chip" data-cmd="stop">stop</button>
+                <button class="chip" data-cmd="resume">resume</button>
+              </div>
+            </div>
+          </section>
+          <section class="card captured" aria-labelledby="capHead">
+            <div class="colhead"><h2 id="capHead">Captured <span id="capCount" class="count">0</span></h2><span class="head-right"><button class="copy-all" id="copyTasks" title="Copy your tasks as a checklist"><span class="msym" aria-hidden="true">checklist</span><span>Copy tasks</span></button><button class="copy-all" id="copyCaptured" title="Copy everything captured"><span class="msym" aria-hidden="true">content_copy</span><span>Copy all</span></button></span></div>
+            <ul id="captured" class="cap-list scroll" aria-live="polite">
+              <li class="empty">Each thought you finish lands here as a reflection, a task or a goal, with a tiny sound.</li>
+            </ul>
+          </section>
+          <section class="card setup scroll" aria-labelledby="setupHead">
+            <div class="colhead"><h2 id="setupHead">Sound and voice</h2></div>
+            <div class="setup-item">
+              <div class="setup-text"><h3>Keys (.env)</h3><p class="muted one-line" id="keyNote">Not loaded. Pick your .env file.</p></div>
+              <div class="setup-actions">
+                <label class="btn small file">Load .env<input type="file" id="envFile"></label>
+                <button id="envForget" class="btn small quiet" hidden>Forget</button>
+              </div>
+            </div>
+            <div class="setup-item" id="sitePassRow" hidden>
+              <div class="setup-text"><h3>Site passcode</h3><p class="muted one-line" id="sitePassNote">This site keeps your keys. Type its passcode to use them.</p></div>
+              <div class="setup-actions">
+                <input id="sitePass" type="password" autocomplete="off" placeholder="Passcode" aria-label="Site passcode" style="width:9em">
+                <button id="sitePassGo" class="btn small">Use</button>
+              </div>
+            </div>
+            <div class="setup-item">
+              <div class="setup-text"><h3>Voice</h3><p class="muted one-line" id="voiceStatus">ElevenLabs voice</p></div>
+              <div class="setup-actions"><button id="voiceHear" class="btn small quiet">Hear</button></div>
+            </div>
+            <div class="setup-item">
+              <div class="setup-text"><h3>After-you-speak sound</h3><p class="muted one-line" id="recordCueSource">the built-in soft rise</p></div>
+              <div class="setup-actions">
+                <button id="recordCueHear" class="btn small quiet">Hear</button>
+                <label class="btn small file">Choose<input type="file" id="recordCueFile" accept="audio/*,.wav,.mp3,.m4a,.aac"></label>
+                <button id="recordCueReset" class="btn small quiet" hidden>Reset</button>
+              </div>
+            </div>
+            <div class="setup-item">
+              <div class="setup-text"><h3>Question cue</h3><p class="muted one-line" id="promptCueSource">the built-in soft cue</p></div>
+              <div class="setup-actions">
+                <button id="promptCueHear" class="btn small quiet">Hear</button>
+                <label class="btn small file">Choose<input type="file" id="promptCueFile" accept="audio/*,.wav,.mp3,.m4a,.aac"></label>
+                <button id="promptCueReset" class="btn small quiet" hidden>Reset</button>
+              </div>
+            </div>
+            <div class="setup-item">
+              <div class="setup-text"><h3>Saved sound</h3><p class="muted one-line" id="savedCueSource">the built-in tiny tones</p>
+                <div class="hear-kinds"><button class="mini reflection" data-hear="reflection">Reflection</button><button class="mini task" data-hear="task">Task</button><button class="mini goal" data-hear="goal">Goal</button></div>
+              </div>
+              <div class="setup-actions">
+                <label class="btn small file">Choose<input type="file" id="savedCueFile" accept="audio/*,.wav,.mp3,.m4a,.aac"></label>
+                <button id="savedCueReset" class="btn small quiet" hidden>Reset</button>
+              </div>
+            </div>
+            <div class="setup-item">
+              <div class="setup-text"><h3>Ocean</h3><p class="muted one-line" id="oceanSource" title="">the built-in stand-in ocean</p></div>
+              <div class="setup-actions">
+                <label class="btn small file">Choose<input type="file" id="oceanFile" accept="audio/*,.wav,.mp3,.m4a,.aac"></label>
+                <button id="oceanReset" class="btn small quiet" hidden>Reset</button>
+              </div>
+            </div>
+            <div class="setup-item stt">
+            <div class="setup-text"><h3>Words to listen for</h3>
+              <input type="text" id="keytermsInput" placeholder="e.g. neuroscience, Coot-tha, PhD, Chia" aria-label="Words to listen for, separated by commas">
+              <p class="muted small">Names and terms it keeps getting wrong, separated by commas.</p>
+            </div>
+          </div>
+          <div class="setup-item stt">
+              <div class="setup-text"><h3>Transcription</h3>
+                <select id="sttProvider" aria-label="Transcription service">
+                  <option value="elevenlabs">ElevenLabs</option>
+                  <option value="chrome">Chrome built-in (sends audio to Google)</option>
+                  <option value="off">Off</option>
+                </select>
+                <p class="muted small">Your voice is sent only while you speak, never in silence.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+      </div>
+
+    </div>
+  </section>
+
+  <!-- the sorted transcript, after a session (your extraction prompt) -->
+  <div class="sort-scrim" id="sortScrim" hidden>
+    <div class="sort-sheet" role="dialog" aria-modal="true" aria-labelledby="sortTitle">
+      <header class="sort-head">
+        <div><h2 id="sortTitle">Sorted thoughts</h2><p class="sort-by" id="sortBy"></p></div>
+        <div class="sort-actions">
+          <button class="btn small quiet" id="sortPrompt" hidden>Show the prompt</button>
+          <button class="btn small" id="sortCopy" disabled>Copy table</button>
+          <button class="btn small" id="sortDownload" disabled>Download .md</button>
+          <button class="icon-btn light" id="sortClose" title="Close"><span class="msym" aria-hidden="true">close</span><span class="sr-only">Close</span></button>
+        </div>
+      </header>
+      <p class="sort-status" id="sortStatus" aria-live="polite"></p>
+      <pre class="sort-prompt" id="sortPromptText" hidden></pre>
+      <div class="sort-body" id="sortBody"></div>
+    </div>
+  </div>
+
+  <!-- the wrap-up card, from the Figma "Wrapping up?" popover -->
+  <div class="wrap-scrim" id="wrapScrim" hidden>
+    <div class="wrap-card" role="dialog" aria-modal="true" aria-labelledby="wrapTitle">
+      <h2 id="wrapTitle">Wrapping up?</h2>
+      <p id="wrapLead">You were with us 0 seconds.</p>
+      <ul class="wrap-rows" id="wrapRows"></ul>
+      <div class="wrap-actions">
+        <button class="wrap-btn soft" id="wrapKeep">keep talking</button>
+        <button class="wrap-btn strong" id="wrapFinish">finish and sort</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ WORDING ============ -->
+  <section id="tab-wording" class="view sheet" hidden>
+    <h1 class="view-title">Wording</h1>
+    <p class="lead">Plan what the system says in every situation. Each card says when it plays and when it never plays. Write one line per way of saying it; the system rotates through them. Changes save when you click outside the box and apply straight away. The words that decide which situation applies are in Settings, under "Word lists the rules use".</p>
+    <div class="row">
+      <button id="wordingExport" class="btn">Save a copy</button>
+      <label class="btn file">Load a copy<input type="file" id="wordingImport" accept=".json,application/json"></label>
+      <button id="wordingReset" class="btn quiet">Restore all defaults</button>
+      <span id="wordingMsg" class="muted" aria-live="polite"></span>
+    </div>
+    <nav id="wordingJump" class="jump" aria-label="Jump to a group"></nav>
+    <div id="wordingCards"></div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section id="tab-settings" class="view sheet" hidden>
+    <h1 class="view-title">Settings</h1>
+    <p class="lead">Every value the system uses. Changes save in this browser and apply straight away.</p>
+    <div class="row"><button id="resetAll" class="btn quiet">Reset everything to defaults</button></div>
+    <div id="settings"></div>
+  </section>
+</main>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="js/util.js"></script>
+<script src="js/clock.js"></script>
+<script src="js/config.js"></script>
+<script src="js/commands.js"></script>
+<script src="js/rules.js"></script>
+<script src="clips/clips.js"></script>
+<script src="js/situations.js"></script>
+<script src="js/wording.js"></script>
+<script src="js/chooser.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/narrate.js"></script>
+<script src="js/loop.js"></script>
+<script src="js/ocean-synth.js"></script>
+<script src="js/ocean-store.js"></script>
+<script src="js/cues.js"></script>
+<script src="js/ticker.js"></script>
+<script src="js/vad.js"></script>
+<script src="js/mic.js"></script>
+<script src="js/keys.js"></script>
+<script src="js/hosted.js"></script>
+<script src="js/pcm.js"></script>
+<script src="js/stt-elevenlabs.js"></script>
+<script src="js/stt-chrome.js"></script>
+<script src="js/stt.js"></script>
+<script src="js/audio-mixer.js"></script>
+<script src="js/voice-standin.js"></script>
+<script src="js/tts-elevenlabs.js"></script>
+<script src="js/voice.js"></script>
+<script src="js/live.js"></script>
+<script src="js/seascape.js"></script>
+<script src="js/cards.js"></script>
+<script src="vendor/compromise.js"></script>
+<script src="js/extract-prompt.js"></script>
+<script src="js/nlp.js"></script>
+<script src="js/extract-claude.js"></script>
+<script src="js/accurate.js"></script>
+<script src="js/outcomes.js"></script>
+<script src="js/live-ui.js"></script>
+<script src="js/wording-ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+# Netlify settings for Wander. No build step: the site is the files as they are.
+[build]
+  publish = "."
+  command = ""

@@ -1,0 +1,2 @@
+You can keep your ocean recording here, but the page cannot read it by itself.
+On the Sound session tab, click "Choose your ocean recording" and pick the file. It is then kept inside your browser.

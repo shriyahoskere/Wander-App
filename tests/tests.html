@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Voice Space tests</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .pass { color: var(--clip); } .fail { color: var(--warn); font-weight: 600; }
+  #results li { margin: 4px 0; } .err { display: block; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
+  #banner { font-size: 20px; margin: 10px 0; }
+</style>
+</head>
+<body>
+<!--
+  tests.html - open this page to run every test in your browser. A green banner means all the
+  rules in your brief still hold. Red lines say exactly which rule broke and how.
+-->
+<header><h1>Tests</h1><p class="sub"><a href="../index.html">Back to Voice Space</a></p></header>
+<main>
+  <section class="panel">
+    <div id="banner" aria-live="polite">Running...</div>
+    <ul id="results"></ul>
+  </section>
+</main>
+<script src="../js/util.js"></script>
+<script src="../js/clock.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/commands.js"></script>
+<script src="../js/rules.js"></script>
+<script src="../clips/clips.js"></script>
+<script src="../js/situations.js"></script>
+<script src="../js/wording.js"></script>
+<script src="../js/chooser.js"></script>
+<script src="../js/engine.js"></script>
+<script src="../js/narrate.js"></script>
+<script src="../js/dryrun.js"></script>
+<script src="../samples/samples.js"></script>
+<script src="../js/loop.js"></script>
+<script src="../js/ocean-synth.js"></script>
+<script src="../js/vad.js"></script>
+<script src="../js/audio-mixer.js"></script>
+<script src="../js/keys.js"></script>
+<script src="../js/pcm.js"></script>
+<script src="../js/stt-elevenlabs.js"></script>
+<script src="../js/stt-chrome.js"></script>
+<script src="../js/stt.js"></script>
+<script src="../js/ocean-store.js"></script>
+<script src="../js/cues.js"></script>
+<script src="../js/tts-elevenlabs.js"></script>
+<script src="../js/seascape.js"></script>
+<script src="../js/cards.js"></script>
+<script src="../vendor/compromise.js"></script>
+<script src="../js/extract-prompt.js"></script>
+<script src="../js/nlp.js"></script>
+<script src="../js/extract-claude.js"></script>
+<script src="../js/accurate.js"></script>
+<script src="../js/outcomes.js"></script>
+<script src="harness.js"></script>
+<script src="rig.js"></script>
+<script src="test-engine.js"></script>
+<script src="test-parts.js"></script>
+<script src="test-audio.js"></script>
+<script src="test-audio-browser.js"></script>
+<script src="test-stt.js"></script>
+<script src="test-wording.js"></script>
+<script src="test-voice.js"></script>
+<script src="test-sea.js"></script>
+<script src="test-extract.js"></script>
+<script src="test-accurate.js"></script>
+<script>
+  var failed = 0, total = 0, list = document.getElementById('results'), b = document.getElementById('banner');
+  VS.runAll(function (r) {
+    total++;
+    var li = document.createElement('li');
+    li.className = r.pass ? 'pass' : 'fail';
+    li.textContent = (r.pass ? '\u2713 ' : '\u2717 ') + r.name;
+    if (!r.pass) { failed++; var e = document.createElement('span'); e.className = 'err'; e.textContent = r.error; li.appendChild(e); }
+    list.appendChild(li);
+    b.textContent = 'Running... ' + total + ' done';
+  }).then(function (results) {
+    b.textContent = failed ? failed + ' of ' + results.length + ' tests FAILED' : 'All ' + results.length + ' tests passed';
+    b.className = failed ? 'fail' : 'pass';
+    window.__testsDone = { failed: failed, total: results.length };
+  });
+</script>
+</body>
+</html>
